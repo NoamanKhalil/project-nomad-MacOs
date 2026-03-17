@@ -12,11 +12,12 @@ No — that's the whole point. Once your content is downloaded, everything works
 - Sync the latest versions of Wikipedia, maps, etc.
 
 ### What hardware do I need?
-N.O.M.A.D. is designed for capable hardware, especially if you want to use the AI features. Recommended:
-- Modern multi-core CPU
-- 16GB+ RAM (32GB+ for best AI performance)
+N.O.M.A.D. runs on macOS and is designed for capable hardware, especially if you want to use the AI features. Recommended:
+- **Apple Silicon (M1/M2/M3/M4)** — strongly recommended for AI performance (unified memory = fast inference)
+- 16GB+ RAM (32GB+ for best AI performance; on Apple Silicon this is unified memory shared with the GPU)
 - SSD storage (size depends on content — 500GB minimum, 2TB+ recommended)
-- Apple Silicon (M1/M2/M3/M4) or AMD GPU recommended for faster AI responses
+- macOS 12 Monterey or later
+- [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/) installed and running
 
 **For detailed build recommendations at three price points ($200–$800+), see the [Hardware Guide](https://www.projectnomad.us/hardware).**
 
@@ -124,22 +125,39 @@ Local AI requires significant computing power. To improve speed:
 
 ### How do I enable GPU acceleration for AI?
 
-N.O.M.A.D. uses native macOS GPU acceleration where available. To ensure optimal performance on macOS:
+On macOS, AI performance is determined primarily by how many resources Docker Desktop is allowed to use. To get the best performance:
 
-1. **Use Apple Silicon** (M1/M2/M3/M4) for unified memory performance.
-2. Make sure you have allocated sufficient resources (Memory & CPU) in your Docker Desktop settings.
-3. **Reinstall the AI Assistant** — Go to Apps, find AI Assistant, and click **Force Reinstall** if you've recently changed resource limits.
+1. Open **Docker Desktop → Settings → Resources**
+2. Set **Memory** to at least 8GB (16GB+ recommended for large models)
+3. Set **CPUs** to at least 4
+4. Click **Apply & Restart**
+5. In N.O.M.A.D., go to **Apps**, find the **AI Assistant**, and click **Force Reinstall** to apply the new resource settings
 
-N.O.M.A.D. will configure the AI container to use available resources automatically.
+**Apple Silicon note:** Ollama runs inside a Docker container on macOS, which means it uses CPU threads allocated to Docker rather than the Metal GPU directly. For the absolute best AI performance on Apple Silicon, more CPU cores and memory allocated to Docker Desktop makes the biggest difference.
 
-**Tip:** Run a [System Benchmark](/settings/benchmark) before and after to see the difference. GPU-accelerated systems typically see 100+ tokens per second vs 10-15 on CPU only.
+**Tip:** Run a [System Benchmark](/settings/benchmark) before and after increasing Docker Desktop resources to measure the improvement.
 
-### I added/changed my GPU but AI is still slow
+### My Mac went to sleep and N.O.M.A.D. stopped working
 
-When you change your Mac or update your Docker resource settings, N.O.M.A.D. may need to be reconfigured:
+When macOS sleeps, Docker Desktop suspends and all N.O.M.A.D. containers stop. After waking:
+
+1. Wait 30–60 seconds for Docker Desktop to resume
+2. Refresh the browser at `http://localhost:8080`
+3. If it doesn't come back, restart services from the terminal:
+```bash
+sudo bash ~/project-nomad/start_nomad.sh
+```
+
+To prevent this, go to **System Settings → Energy Saver** and disable "Put hard disks to sleep when possible" and set display sleep to a longer interval.
+
+### I updated Docker Desktop resources but AI is still slow
+
+After changing CPU/Memory in Docker Desktop Settings → Resources:
 
 1. Go to **Apps**
 2. Find the **AI Assistant** and click **Force Reinstall**
+
+The container needs to be recreated to pick up the new resource limits.
 
 ### AI Chat not available
 
@@ -186,10 +204,31 @@ If the problem persists:
 ### The server won't start
 
 If you can't access the Command Center at all:
-1. Verify the server hardware is powered on
-2. Check network connectivity
-3. Try accessing directly via the server's IP address
-4. Check server logs if you have console access
+1. Make sure **Docker Desktop is running** — look for the Docker whale icon in your Mac menu bar. N.O.M.A.D. cannot run without it.
+2. Open Docker Desktop and check that all containers are shown as running
+3. Try starting services manually:
+```bash
+sudo bash ~/project-nomad/start_nomad.sh
+```
+4. Check network connectivity and try `http://localhost:8080`
+5. If Docker Desktop shows errors, restart it from the menu bar icon
+
+### Docker Desktop says it doesn't have enough memory
+
+If Docker Desktop is showing memory pressure or containers are crashing:
+1. Open **Docker Desktop → Settings → Resources**
+2. Increase **Memory** to at least 8GB
+3. Click **Apply & Restart**
+4. Wait for Docker to restart, then refresh N.O.M.A.D. at `http://localhost:8080`
+
+### My firewall is blocking N.O.M.A.D.
+
+If other devices on your network can't reach N.O.M.A.D.:
+1. Go to **System Settings → Network → Firewall**
+2. Click **Options** and check that Docker is allowed to accept incoming connections
+3. If not listed, click the `+` button and add Docker Desktop
+
+Alternatively, open the specific ports (8080, 8090, 8300, etc.) for your local network interface.
 
 ### I forgot my Kolibri password
 
@@ -279,7 +318,10 @@ Try asking a question in [AI Chat](/chat). The local AI can answer questions abo
 You're in the docs now. Use the menu to find specific topics.
 
 ### Join the community
-Get help from other NOMAD users on **[Discord](https://discord.com/invite/crosstalksolutions)**.
+Project N.O.M.A.D. is built for the community — by people who believe that knowledge and tools should be accessible to everyone, online or off.
+
+- **Discord:** Get help, share your builds, and connect with other NOMAD users — **[Join the Community](https://discord.com/invite/crosstalksolutions)**
+- **X / Twitter:** Follow **[@KhalilNoaman](https://x.com/KhalilNoaman)** for updates, development news, and community highlights
 
 ### Release Notes
 See what's changed in each version: **[Release Notes](/docs/release-notes)**

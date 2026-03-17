@@ -84,7 +84,7 @@ N.O.M.A.D. includes a built-in AI chat interface powered by Ollama. It runs enti
 
 **Note:** The AI Assistant must be installed first. Enable it during Easy Setup or install it from the [Apps](/settings/apps) page.
 
-**GPU Acceleration:** If you are running N.O.M.A.D. on an Apple Silicon Mac (M1/M2/M3/M4), AI responses will be dramatically faster compared to CPU emulation. Ensure you have allocated sufficient CPU and Memory resources in your Docker Desktop settings to maximize performance.
+**Performance on macOS:** AI speed depends on how many resources Docker Desktop is allowed to use. Before installing the AI Assistant, go to **Docker Desktop → Settings → Resources** and allocate at least 8GB of memory and 4 CPUs. On Apple Silicon Macs, more unified memory allocated to Docker = faster and larger models.
 
 ---
 
@@ -204,6 +204,13 @@ Check on your server anytime:
 - **Download what you need** — Maps, references, educational content
 - **Test it** — Make sure features work while you still have internet to troubleshoot
 
+### macOS-Specific Tips
+
+- **Prevent sleep** — Go to **System Settings → Energy Saver** and disable automatic sleep, or set it to a long interval. When your Mac sleeps, Docker Desktop suspends and N.O.M.A.D. goes offline.
+- **Increase Docker resources** — Open **Docker Desktop → Settings → Resources** and allocate more Memory and CPUs before installing heavy apps like the AI Assistant. The defaults (2 CPUs / 2GB RAM) are not enough for AI.
+- **Firewall permissions** — macOS may prompt you to allow Docker to accept network connections the first time services start. Click **Allow** to make N.O.M.A.D. accessible to other devices on your local network.
+- **Storage location** — All N.O.M.A.D. data is stored in `~/project-nomad`. Do not move this directory after installation — Docker container bind mounts depend on this path.
+
 ### Storage Management
 
 Your server has limited storage. Prioritize:
@@ -218,6 +225,8 @@ Check storage usage in **Settings → System**.
 
 - **In-app docs:** You're reading them now
 - **AI assistant:** Ask a question in [AI Chat](/chat)
+- **Community Discord:** [Join the community](https://discord.com/invite/crosstalksolutions)
+- **X / Twitter:** Follow [@KhalilNoaman](https://x.com/KhalilNoaman) for updates and community highlights
 - **Release notes:** See what's new in each version
 
 ---

@@ -17,7 +17,9 @@
 Project N.O.M.A.D. is a self-contained, offline-first knowledge and education server packed with critical tools, knowledge, and AI to keep you informed and empowered—anytime, anywhere.
 
 ## Installation & Quickstart
-Project N.O.M.A.D. can be installed on macOS. Installation is completely terminal-based, and all tools and resources are designed to be accessed through the browser.
+Project N.O.M.A.D. can be installed on macOS (12 Monterey or later). Installation is completely terminal-based, and all tools and resources are designed to be accessed through the browser.
+
+**Prerequisites:** [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/) must be installed and running before you begin.
 
 *Note: Administrator privileges are required to run the install script*
 
@@ -61,24 +63,27 @@ available AI tools, we highly encourage the use of a beefy, GPU-backed device to
 
 At it's core, however, N.O.M.A.D. is still very lightweight. For a barebones installation of the management application itself, the following minimal specs are required:
 
-*Note: Project N.O.M.A.D. is not sponsored by any hardware manufacturer and is designed to be as hardware-agnostic as possible. The harware listed below is for example/comparison use only*
+*Note: Project N.O.M.A.D. is not sponsored by any hardware manufacturer and is designed to be as hardware-agnostic as possible. The hardware listed below is for example/comparison use only*
 
 #### Minimum Specs
-- Processor: 2 GHz dual-core processor or better
-- RAM: 4GB system memory
-- Storage: At least 5 GB free disk space
-- OS: Debian-based (Ubuntu recommended)
+- Processor: Apple Silicon (M1 or later) or Intel dual-core 2 GHz or better
+- RAM: 8 GB system memory
+- Storage: At least 10 GB free disk space
+- OS: macOS 12 Monterey or later
+- Docker Desktop for Mac (installed and running)
 - Stable internet connection (required during install only)
 
-To run LLM's and other included AI tools:
+To run LLMs and other included AI tools:
 
 #### Optimal Specs
-- Processor: AMD Ryzen 7 or Intel Core i7 or better
-- RAM: 32 GB system memory
-- Graphics: NVIDIA RTX 3060 or AMD equivalent or better (more VRAM = run larger models)
-- Storage: At least 250 GB free disk space (preferably on SSD)
-- OS: Debian-based (Ubuntu recommended)
+- Processor: Apple Silicon M2 Pro / M3 Pro or better (unified memory architecture provides excellent AI performance)
+- RAM: 32 GB system memory or more (unified memory on Apple Silicon is shared with the GPU — more RAM = larger models)
+- Storage: At least 250 GB free disk space (SSD recommended; NVMe preferred)
+- OS: macOS 13 Ventura or later
+- Docker Desktop for Mac with at least 8 GB memory and 4 CPUs allocated
 - Stable internet connection (required during install only)
+
+> **Apple Silicon note:** Apple M-series chips use a unified memory architecture — the same memory pool is shared between CPU and GPU. This means 32 GB of unified RAM is significantly more capable for AI than 32 GB on a discrete GPU system. AI inference on Apple Silicon uses the Metal framework natively through Ollama, delivering fast token generation without a discrete GPU.
 
 **For detailed build recommendations at three price points ($200–$800+), see the [Hardware Guide](https://www.projectnomad.us/hardware).**
 
@@ -132,9 +137,12 @@ Use the format `- **Area**: Description` to stay consistent with existing entrie
 
 ## Community & Resources
 
+Project N.O.M.A.D. is built for the community — by people who believe that knowledge and tools should be accessible to everyone, online or off. Whether you're prepping for emergencies, building a learning server for your family, or just curious about self-hosted tech, you belong here.
+
 - **Website:** [www.projectnomad.us](https://www.projectnomad.us) - Learn more about the project
 - **Discord:** [Join the Community](https://discord.com/invite/crosstalksolutions) - Get help, share your builds, and connect with other NOMAD users
 - **Benchmark Leaderboard:** [benchmark.projectnomad.us](https://benchmark.projectnomad.us) - See how your hardware stacks up against other NOMAD builds
+- **X / Twitter:** Follow [@KhalilNoaman](https://x.com/KhalilNoaman) for updates, behind-the-scenes development, and community highlights
 
 ## License
 

@@ -68,6 +68,26 @@ export default function LegalPage() {
                 <br />
                 <a href="https://github.com/qdrant/qdrant" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://github.com/qdrant/qdrant</a>
               </li>
+              <li>
+                <strong>Docker Desktop</strong> - Container runtime required to run N.O.M.A.D. on macOS (Docker Subscription Service Agreement)
+                <br />
+                <a href="https://www.docker.com/products/docker-desktop/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://www.docker.com/products/docker-desktop/</a>
+              </li>
+            </ul>
+          </section>
+
+          {/* macOS Platform Notice */}
+          <section className="mb-10">
+            <h2 className="text-2xl font-semibold mb-4">macOS Platform Notice</h2>
+            <p className="text-gray-700 mb-3">
+              This version of Project N.O.M.A.D. is built and tested for macOS (12 Monterey or later).
+              It requires Docker Desktop for Mac to be installed and running.
+            </p>
+            <ul className="list-disc list-inside space-y-2 text-gray-700">
+              <li><strong>Docker Desktop:</strong> N.O.M.A.D. runs all services as Docker containers. Docker Desktop must be running for any N.O.M.A.D. features to work.</li>
+              <li><strong>File Sharing:</strong> Docker Desktop on macOS only shares your home directory (<code>~/</code>) with containers by default. N.O.M.A.D. stores all data under <code>~/project-nomad</code> to ensure compatibility.</li>
+              <li><strong>Apple Silicon (M-series):</strong> AI inference runs via the Ollama container using the Metal framework for GPU-accelerated performance on Apple Silicon hardware.</li>
+              <li><strong>Resource Allocation:</strong> Docker Desktop limits CPU and memory available to containers. For best AI performance, increase these limits in Docker Desktop → Settings → Resources.</li>
             </ul>
           </section>
 
