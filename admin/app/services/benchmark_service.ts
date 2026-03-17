@@ -251,6 +251,19 @@ export class BenchmarkService {
         }
       }
 
+      // Apple Silicon: use env var set during install (sysctl machdep.cpu.brand_string)
+      const appleChip = process.env.APPLE_CHIP_MODEL
+      if (appleChip) {
+        return {
+          cpu_model: appleChip,
+          cpu_cores: cpu.physicalCores,
+          cpu_threads: cpu.cores,
+          ram_bytes: mem.total,
+          disk_type: diskType,
+          gpu_model: `${appleChip} GPU (Metal)`,
+        }
+      }
+
       // Get GPU model (prefer discrete GPU with dedicated VRAM)
       let gpuModel: string | null = null
       if (graphics.controllers && graphics.controllers.length > 0) {

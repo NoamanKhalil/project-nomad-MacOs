@@ -262,6 +262,19 @@ export class SystemService {
           os.kernel = dockerInfo.KernelVersion
         }
 
+        // Apple Silicon: env var set at install time via sysctl machdep.cpu.brand_string
+        const appleChip = process.env.APPLE_CHIP_MODEL
+        if (appleChip) {
+          graphics.controllers = [{
+            model: `${appleChip} GPU (Metal)`,
+            vendor: 'Apple',
+            bus: '',
+            vram: 0,
+            vramDynamic: true,
+          }]
+          gpuHealth = { status: 'ok', hasNvidiaRuntime: false, ollamaGpuAccessible: true }
+        }
+
         // If si.graphics() returned no controllers (common inside Docker),
         // fall back to nvidia runtime + nvidia-smi detection
         if (!graphics.controllers || graphics.controllers.length === 0) {

@@ -71,12 +71,19 @@ export class RagService {
       const collectionExists = collections.collections.some((col) => col.name === collectionName)
 
       if (!collectionExists) {
-        await this.qdrant!.createCollection(collectionName, {
-          vectors: {
-            size: dimensions,
-            distance: 'Cosine',
-          },
-        })
+        try {
+          await this.qdrant!.createCollection(collectionName, {
+            vectors: {
+              size: dimensions,
+              distance: 'Cosine',
+            },
+          })
+        } catch (createError: any) {
+          // 409 Conflict means another concurrent job already created the collection — not an error
+          if (createError?.status !== 409) {
+            throw createError
+          }
+        }
       }
 
       // Create payload indexes for faster filtering (idempotent — Qdrant ignores duplicates)

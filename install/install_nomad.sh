@@ -263,7 +263,17 @@ download_management_compose_file() {
   sed -i '' "s|DB_PASSWORD=replaceme|DB_PASSWORD=${db_user_password}|g" "$compose_file_path"
   sed -i '' "s|MYSQL_ROOT_PASSWORD=replaceme|MYSQL_ROOT_PASSWORD=${db_root_password}|g" "$compose_file_path"
   sed -i '' "s|MYSQL_PASSWORD=replaceme|MYSQL_PASSWORD=${db_user_password}|g" "$compose_file_path"
-  
+
+  # Detect Apple Silicon chip model (e.g. "Apple M3 Pro") for hardware display in benchmark
+  local apple_chip
+  apple_chip=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || true)
+  if [[ -n "$apple_chip" ]]; then
+    sed -i '' "s|APPLE_CHIP_MODEL=replaceme_apple_chip|APPLE_CHIP_MODEL=${apple_chip}|g" "$compose_file_path"
+  else
+    # Not Apple Silicon — remove the placeholder line entirely
+    sed -i '' "/APPLE_CHIP_MODEL=replaceme_apple_chip/d" "$compose_file_path"
+  fi
+
   echo -e "${GREEN}#${RESET} Docker compose file configured successfully.\\n"
 }
 
