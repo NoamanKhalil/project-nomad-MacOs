@@ -12,7 +12,7 @@
 #   updater that cannot be applied through the normal in-app update mechanism:
 #
 #   Fix 1 — Sidecar volume write access
-#     Removes the :ro (read-only) flag from the sidecar's /opt/project-nomad
+#     Removes the :ro (read-only) flag from the sidecar's /usr/local/project-nomad
 #     volume mount in compose.yml. The sidecar must be able to write to
 #     compose.yml so it can set the correct Docker image tag when installing
 #     RC or stable versions.
@@ -40,7 +40,7 @@ WHITE_R='\033[39m'
 # Constants
 ###############################################################################
 
-NOMAD_DIR="/opt/project-nomad"
+NOMAD_DIR="/usr/local/project-nomad"
 COMPOSE_FILE="${NOMAD_DIR}/compose.yml"
 SIDECAR_DIR="${NOMAD_DIR}/sidecar-updater"
 COMPOSE_PROJECT_NAME="project-nomad"
@@ -87,8 +87,8 @@ check_docker_running() {
     echo -e "${RED}#${RESET} Docker is not installed. Cannot proceed."
     exit 1
   fi
-  if ! systemctl is-active --quiet docker; then
-    echo -e "${RED}#${RESET} Docker is not running. Please start Docker and try again."
+  if ! docker info &>/dev/null; then
+    echo -e "${RED}#${RESET} Docker is not running. Please open Docker Desktop and wait for it to start, then try again."
     exit 1
   fi
   echo -e "${GREEN}#${RESET} Docker is running.\n"
@@ -129,17 +129,17 @@ backup_compose_file() {
 
 fix_sidecar_volume_mount() {
   # Idempotent: skip if :ro is already absent from the sidecar mount line
-  if ! grep -q '/opt/project-nomad:/opt/project-nomad:ro' "$COMPOSE_FILE"; then
+  if ! grep -q '/usr/local/project-nomad:/usr/local/project-nomad:ro' "$COMPOSE_FILE"; then
     echo -e "${GREEN}#${RESET} Sidecar volume mount is already writable — no change needed.\n"
     return 0
   fi
 
   echo -e "${YELLOW}#${RESET} Removing :ro restriction from sidecar volume mount in compose.yml..."
-  sed -i 's|/opt/project-nomad:/opt/project-nomad:ro.*|/opt/project-nomad:/opt/project-nomad # Writable access required so the updater can set the correct image tag in compose.yml|' "$COMPOSE_FILE"
+  sed -i '' 's|/usr/local/project-nomad:/usr/local/project-nomad:ro.*|/usr/local/project-nomad:/usr/local/project-nomad # Writable access required so the updater can set the correct image tag in compose.yml|' "$COMPOSE_FILE"
 
-  if grep -q '/opt/project-nomad:/opt/project-nomad:ro' "$COMPOSE_FILE"; then
+  if grep -q '/usr/local/project-nomad:/usr/local/project-nomad:ro' "$COMPOSE_FILE"; then
     echo -e "${RED}#${RESET} Failed to remove :ro from compose.yml. Please update it manually:"
-    echo -e "${WHITE_R}    - /opt/project-nomad:/opt/project-nomad:ro${RESET}  →  ${WHITE_R}- /opt/project-nomad:/opt/project-nomad${RESET}"
+    echo -e "${WHITE_R}    - /usr/local/project-nomad:/usr/local/project-nomad:ro${RESET}  →  ${WHITE_R}- /usr/local/project-nomad:/usr/local/project-nomad${RESET}"
     exit 1
   fi
 

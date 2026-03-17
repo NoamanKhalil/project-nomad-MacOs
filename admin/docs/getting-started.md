@@ -84,7 +84,7 @@ N.O.M.A.D. includes a built-in AI chat interface powered by Ollama. It runs enti
 
 **Note:** The AI Assistant must be installed first. Enable it during Easy Setup or install it from the [Apps](/settings/apps) page.
 
-**GPU Acceleration:** If your server has an NVIDIA GPU with the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed, N.O.M.A.D. will automatically use it for AI — dramatically faster responses (10-20x improvement). If you add a GPU later, go to [Apps](/settings/apps) and **Force Reinstall** the AI Assistant to enable it.
+**GPU Acceleration:** If you are running N.O.M.A.D. on an Apple Silicon Mac (M1/M2/M3/M4), AI responses will be dramatically faster compared to CPU emulation. Ensure you have allocated sufficient CPU and Memory resources in your Docker Desktop settings to maximize performance.
 
 ---
 

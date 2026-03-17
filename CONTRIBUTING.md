@@ -45,8 +45,8 @@ When opening an issue:
 
 ### Prerequisites
 
-- A Debian-based OS (Ubuntu recommended)
-- `sudo`/root privileges
+- macOS (Apple Silicon M-series recommended, or Intel Mac)
+- Administrator privileges
 - Docker installed and running
 - A stable internet connection (required for dependency downloads)
 - Node.js (for frontend/admin work)

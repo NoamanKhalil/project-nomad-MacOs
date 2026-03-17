@@ -15,11 +15,13 @@
 #   cleared and Docker would create a directory at the mount point instead of a file.
 #
 #   The new approach uses a disk-collector sidecar container that reads host
-#   disk info via the /:/host:ro,rslave bind-mount pattern (same pattern as Prometheus
-#   node-exporter, and no SYS_ADMIN or privileged capabilities required) and writes directly to
-#   /opt/project-nomad/storage/nomad-disk-info.json, which the admin container
+#   disk info via a /:/host:ro bind-mount and writes directly to
+#   /usr/local/project-nomad/storage/nomad-disk-info.json, which the admin container
 #   already reads via its existing storage bind-mount. Thus, no admin image update
 #   or new volume mounts required.
+#
+#   NOTE (macOS): The /:/host:ro mount exposes the Docker VM filesystem, not the
+#   macOS host filesystem. Disk info reflects the Docker VM's view of storage.
 
 ###############################################################################
 # Color Codes
@@ -35,7 +37,7 @@ WHITE_R='\033[39m'
 # Constants
 ###############################################################################
 
-NOMAD_DIR="/opt/project-nomad"
+NOMAD_DIR="/usr/local/project-nomad"
 COMPOSE_FILE="${NOMAD_DIR}/compose.yml"
 COMPOSE_PROJECT_NAME="project-nomad"
 
@@ -83,8 +85,8 @@ check_docker_running() {
     echo -e "${RED}#${RESET} Docker is not installed. Cannot proceed."
     exit 1
   fi
-  if ! systemctl is-active --quiet docker; then
-    echo -e "${RED}#${RESET} Docker is not running. Please start Docker and try again."
+  if ! docker info &>/dev/null; then
+    echo -e "${RED}#${RESET} Docker is not running. Please open Docker Desktop and wait for it to start, then try again."
     exit 1
   fi
   echo -e "${GREEN}#${RESET} Docker is running.\n"
@@ -138,7 +140,7 @@ remove_old_bind_mount() {
   fi
 
   echo -e "${YELLOW}#${RESET} Removing old /tmp/nomad-disk-info.json bind-mount from admin volumes..."
-  sed -i '/\/tmp\/nomad-disk-info\.json:\/app\/storage\/nomad-disk-info\.json/d' "$COMPOSE_FILE"
+  sed -i '' '/\/tmp\/nomad-disk-info\.json:\/app\/storage\/nomad-disk-info\.json/d' "$COMPOSE_FILE"
 
   if grep -q 'nomad-disk-info\.json' "$COMPOSE_FILE"; then
     echo -e "${RED}#${RESET} Failed to remove old bind-mount from compose.yml. Please remove it manually:"
@@ -166,8 +168,8 @@ add_disk_collector_service() {
     print "    container_name: nomad_disk_collector"
     print "    restart: unless-stopped"
     print "    volumes:"
-    print "      - /:/host:ro,rslave  # Read-only view of host FS with rslave propagation so /sys and /proc submounts are visible"
-    print "      - /opt/project-nomad/storage:/storage  # Shared storage dir — disk info written here is read by the admin container"
+    print "      - /:/host:ro  # Read-only view of host filesystem (macOS: mounts Docker VM filesystem, not macOS host)"
+    print "      - /usr/local/project-nomad/storage:/storage  # Shared storage dir — disk info written here is read by the admin container"
     print ""
   }
   {print}' "$COMPOSE_FILE" > "${COMPOSE_FILE}.tmp" && mv "${COMPOSE_FILE}.tmp" "$COMPOSE_FILE"

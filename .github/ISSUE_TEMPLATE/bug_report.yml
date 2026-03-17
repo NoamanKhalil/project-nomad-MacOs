@@ -87,6 +87,10 @@ body:
       label: Operating System
       description: What OS are you running N.O.M.A.D. on?
       options:
+        - macOS 15 (Sequoia)
+        - macOS 14 (Sonoma)
+        - macOS 13 (Ventura)
+        - macOS 12 (Monterey)
         - Ubuntu 24.04
         - Ubuntu 22.04
         - Ubuntu 20.04
@@ -189,5 +193,5 @@ body:
           required: true
         - label: I have redacted any personal or sensitive information from logs and screenshots
           required: true
-        - label: This issue is NOT related to running N.O.M.A.D. on an unsupported/non-Debian-based OS
+        - label: This issue is NOT related to running N.O.M.A.D. on an unsupported OS (Supported: macOS, Debian/Ubuntu)
           required: false

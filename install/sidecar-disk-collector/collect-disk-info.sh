@@ -2,9 +2,12 @@
 
 # Project N.O.M.A.D. - Disk Info Collector Sidecar
 #
-# Reads host block device and filesystem info via the /:/host:ro,rslave bind-mount.
+# Reads block device and filesystem info from within the Linux container environment.
 # No special capabilities required. Writes JSON to /storage/nomad-disk-info.json, which is read by the admin container.
 # Runs continually and updates the JSON data every 2 minutes.
+#
+# NOTE (macOS): On macOS Docker Desktop, the /:/host:ro bind-mount exposes the Docker VM
+# filesystem, not the macOS host filesystem. Disk info reflects the Docker VM's virtual disk.
 
 log() {
     echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] $*"
@@ -23,16 +26,14 @@ fi
 while true; do
 
     # Get disk layout (-b outputs SIZE in bytes as a number rather than a human-readable string)
-    DISK_LAYOUT=$(lsblk --sysroot /host --json -b -o NAME,SIZE,TYPE,MODEL,SERIAL,VENDOR,ROTA,TRAN 2>/dev/null)
+    DISK_LAYOUT=$(lsblk --json -b -o NAME,SIZE,TYPE,MODEL,SERIAL,VENDOR,ROTA,TRAN 2>/dev/null)
     if [[ -z "$DISK_LAYOUT" ]]; then
-        log "WARNING: lsblk --sysroot /host failed, using empty block devices"
+        log "WARNING: lsblk failed, using empty block devices"
         DISK_LAYOUT='{"blockdevices":[]}'
     fi
 
-    # Get filesystem usage by parsing /host/proc/1/mounts (PID 1 = host init = root mount namespace)
-    # /host/proc/mounts is a symlink to /proc/self/mounts, which always reflects the CURRENT
-    # process's mount namespace (the container's), not the host's. /proc/1/mounts reflects the
-    # host init process's namespace, giving us the true host mount table.
+    # Get filesystem usage by parsing /proc/mounts (the container's mount table)
+    # On macOS Docker Desktop this reflects the Docker VM's filesystem view.
     FS_JSON="["
     FIRST=1
     while IFS=' ' read -r dev mountpoint fstype opts _rest; do
@@ -40,7 +41,7 @@ while true; do
         [[ "$fstype" =~ ^(tmpfs|devtmpfs|squashfs|sysfs|proc|devpts|cgroup|cgroup2|overlay|nsfs|autofs|hugetlbfs|mqueue|pstore|fusectl|binfmt_misc)$ ]] && continue
         [[ "$mountpoint" == "none" ]] && continue
 
-        STATS=$(df -B1 "/host${mountpoint}" 2>/dev/null | awk 'NR==2{print $2,$3,$4,$5}')
+        STATS=$(df -B1 "${mountpoint}" 2>/dev/null | awk 'NR==2{print $2,$3,$4,$5}')
         [[ -z "$STATS" ]] && continue
 
         read -r size used avail pct <<< "$STATS"
@@ -49,7 +50,7 @@ while true; do
         [[ "$FIRST" -eq 0 ]] && FS_JSON+=","
         FS_JSON+="{\"fs\":\"${dev}\",\"size\":${size},\"used\":${used},\"available\":${avail},\"use\":${pct},\"mount\":\"${mountpoint}\"}"
         FIRST=0
-    done < /host/proc/1/mounts
+    done < /proc/mounts
     FS_JSON+="]"
 
     # Use a tmp file for atomic update

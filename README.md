@@ -17,13 +17,13 @@
 Project N.O.M.A.D. is a self-contained, offline-first knowledge and education server packed with critical tools, knowledge, and AI to keep you informed and empowered—anytime, anywhere.
 
 ## Installation & Quickstart
-Project N.O.M.A.D. can be installed on any Debian-based operating system (we recommend Ubuntu). Installation is completely terminal-based, and all tools and resources are designed to be accessed through the browser, so there's no need for a desktop environment if you'd rather setup N.O.M.A.D. as a "server" and access it through other clients.
+Project N.O.M.A.D. can be installed on macOS. Installation is completely terminal-based, and all tools and resources are designed to be accessed through the browser.
 
-*Note: sudo/root privileges are required to run the install script*
+*Note: Administrator privileges are required to run the install script*
 
 #### Quick Install
 ```bash
-sudo apt-get update && sudo apt-get install -y curl && curl -fsSL https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/install_nomad.sh -o install_nomad.sh && sudo bash install_nomad.sh
+curl -fsSL https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/install_nomad.sh -o install_nomad.sh && sudo bash install_nomad.sh
 ```
 
 Project N.O.M.A.D. is now installed on your device! Open a browser and navigate to `http://localhost:8080` (or `http://DEVICE_IP:8080`) to start exploring!
@@ -153,7 +153,7 @@ sudo bash /opt/project-nomad/start_nomad.sh
 
 ###### Stop Script - Stops all installed project containers
 ```bash
-sudo bash /opt/project-nomad/stop_nomad.sh
+sudo bash /usr/local/project-nomad/stop_nomad.sh
 ```
 ###
 

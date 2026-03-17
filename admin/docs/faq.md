@@ -16,7 +16,7 @@ N.O.M.A.D. is designed for capable hardware, especially if you want to use the A
 - Modern multi-core CPU
 - 16GB+ RAM (32GB+ for best AI performance)
 - SSD storage (size depends on content — 500GB minimum, 2TB+ recommended)
-- NVIDIA or AMD GPU recommended for faster AI responses
+- Apple Silicon (M1/M2/M3/M4) or AMD GPU recommended for faster AI responses
 
 **For detailed build recommendations at three price points ($200–$800+), see the [Hardware Guide](https://www.projectnomad.us/hardware).**
 
@@ -117,36 +117,29 @@ The Maps feature requires downloaded map data. If you see a blank area:
 ### AI responses are slow
 
 Local AI requires significant computing power. To improve speed:
-- **Add a GPU** — An NVIDIA GPU with the NVIDIA Container Toolkit can improve AI speed by 10-20x or more
+- **Hardware Acceleration** — Apple Silicon Macs utilize the Metal framework natively, improving AI speed dramatically over CPU execution.
 - Close other applications on the server
 - Ensure adequate cooling (overheating causes throttling)
 - Consider using a smaller/faster AI model if available
 
 ### How do I enable GPU acceleration for AI?
 
-N.O.M.A.D. automatically detects NVIDIA GPUs when the NVIDIA Container Toolkit is installed on the host system. To set up GPU acceleration:
+N.O.M.A.D. uses native macOS GPU acceleration where available. To ensure optimal performance on macOS:
 
-1. **Install an NVIDIA GPU** in your server (if not already present)
-2. **Install the NVIDIA Container Toolkit** on the host — follow the [official installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)
-3. **Reinstall the AI Assistant** — Go to [Apps](/settings/apps), find AI Assistant, and click **Force Reinstall**
+1. **Use Apple Silicon** (M1/M2/M3/M4) for unified memory performance.
+2. Make sure you have allocated sufficient resources (Memory & CPU) in your Docker Desktop settings.
+3. **Reinstall the AI Assistant** — Go to Apps, find AI Assistant, and click **Force Reinstall** if you've recently changed resource limits.
 
-N.O.M.A.D. will detect the GPU during installation and configure the AI to use it automatically. You'll see "NVIDIA container runtime detected" in the installation progress.
+N.O.M.A.D. will configure the AI container to use available resources automatically.
 
 **Tip:** Run a [System Benchmark](/settings/benchmark) before and after to see the difference. GPU-accelerated systems typically see 100+ tokens per second vs 10-15 on CPU only.
 
 ### I added/changed my GPU but AI is still slow
 
-When you add or swap a GPU, N.O.M.A.D. needs to reconfigure the AI container to use it:
+When you change your Mac or update your Docker resource settings, N.O.M.A.D. may need to be reconfigured:
 
-1. Make sure the **NVIDIA Container Toolkit** is installed on the host
-2. Go to **[Apps](/settings/apps)**
-3. Find the **AI Assistant** and click **Force Reinstall**
-
-Force Reinstall recreates the AI container with GPU support enabled. Without this step, the AI continues to run on CPU only.
-
-### I see a "GPU passthrough not working" warning
-
-N.O.M.A.D. checks whether your GPU is actually accessible inside the AI container. If a GPU is detected on the host but isn't working inside the container, you'll see a warning banner on the System Information and AI Settings pages. Click the **"Fix: Reinstall AI Assistant"** button to recreate the container with proper GPU access. This preserves your downloaded AI models.
+1. Go to **Apps**
+2. Find the **AI Assistant** and click **Force Reinstall**
 
 ### AI Chat not available
 
@@ -237,16 +230,16 @@ The system is designed to recover gracefully. If an update fails:
 
 ### Command-Line Maintenance
 
-For advanced troubleshooting or when you can't access the web interface, N.O.M.A.D. includes helper scripts in `/opt/project-nomad`:
+For advanced troubleshooting or when you can't access the web interface, N.O.M.A.D. includes helper scripts in `/usr/local/project-nomad`:
 
 **Start all services:**
 ```bash
-sudo bash /opt/project-nomad/start_nomad.sh
+sudo bash /usr/local/project-nomad/start_nomad.sh
 ```
 
 **Stop all services:**
 ```bash
-sudo bash /opt/project-nomad/stop_nomad.sh
+sudo bash /usr/local/project-nomad/stop_nomad.sh
 ```
 
 **Update Command Center:**

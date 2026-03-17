@@ -29,7 +29,7 @@ GREEN='\033[1;32m' # Light Green.
 ###################################################################################################################################################################################################
 
 WHIPTAIL_TITLE="Project N.O.M.A.D Installation"
-NOMAD_DIR="/opt/project-nomad"
+NOMAD_DIR="/usr/local/project-nomad"
 MANAGEMENT_COMPOSE_FILE_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/management_compose.yaml"
 ENTRYPOINT_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/entrypoint.sh"
 SIDECAR_UPDATER_DOCKERFILE_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/sidecar-updater/Dockerfile"
@@ -81,14 +81,14 @@ check_is_bash() {
     echo -e "${GREEN}#${RESET} This script is running in bash.\\n"
 }
 
-check_is_debian_based() {
-  if [[ ! -f /etc/debian_version ]]; then
+check_is_macos() {
+  if [[ "$OSTYPE" != "darwin"* ]]; then
     header_red
-    echo -e "${RED}#${RESET} This script is designed to run on Debian-based systems only.\\n"
-    echo -e "${RED}#${RESET} Please run this script on a Debian-based system and try again."
+    echo -e "${RED}#${RESET} This script is designed to run on macOS only.\\n"
+    echo -e "${RED}#${RESET} Please run this script on a macOS system and try again."
     exit 1
   fi
-    echo -e "${GREEN}#${RESET} This script is running on a Debian-based system.\\n"
+    echo -e "${GREEN}#${RESET} This script is running on macOS.\\n"
 }
 
 ensure_dependencies_installed() {
@@ -106,8 +106,13 @@ ensure_dependencies_installed() {
 
   if [[ ${#missing_deps[@]} -gt 0 ]]; then
     echo -e "${YELLOW}#${RESET} Installing required dependencies: ${missing_deps[*]}...\\n"
-    sudo apt-get update
-    sudo apt-get install -y "${missing_deps[@]}"
+
+    if ! command -v brew &> /dev/null; then
+      echo -e "${RED}#${RESET} Homebrew is not installed. Please install it from https://brew.sh and try again."
+      exit 1
+    fi
+
+    brew install "${missing_deps[@]}"
 
     # Verify installation
     for dep in "${missing_deps[@]}"; do
@@ -143,188 +148,44 @@ generateRandomPass() {
 
 ensure_docker_installed() {
   if ! command -v docker &> /dev/null; then
-    echo -e "${YELLOW}#${RESET} Docker not found. Installing Docker...\\n"
-    
-    # Update package database
-    sudo apt-get update
-    
-    # Install prerequisites
-    sudo apt-get install -y ca-certificates curl
-    
-    # Create directory for keyrings
-    # sudo install -m 0755 -d /etc/apt/keyrings
-    
-    # # Download Docker's official GPG key
-    # sudo curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
-    # sudo chmod a+r /etc/apt/keyrings/docker.asc
-
-    # # Add the repository to Apt sources
-    # echo \
-    #   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
-    #   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    #   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-    # # Update the package database with the Docker packages from the newly added repo
-    # sudo apt-get update
-
-    # # Install Docker packages
-    # sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-    # Download the Docker convenience script
-    curl -fsSL https://get.docker.com -o get-docker.sh
-
-    # Run the Docker installation script
-    sudo sh get-docker.sh
-
-    # Check if Docker was installed successfully
-    if ! command -v docker &> /dev/null; then
-      echo -e "${RED}#${RESET} Docker installation failed. Please check the logs and try again."
-      exit 1
-    fi
-    
-    echo -e "${GREEN}#${RESET} Docker installation completed.\\n"
+    echo -e "${RED}#${RESET} Docker Desktop is not installed.\\n"
+    echo -e "${RED}#${RESET} Please install Docker Desktop for Mac from: https://www.docker.com/products/docker-desktop/"
+    echo -e "${RED}#${RESET} After installing, open Docker Desktop, wait for it to finish starting, then re-run this script."
+    exit 1
   else
-    echo -e "${GREEN}#${RESET} Docker is already installed.\\n"
-    
-    # Check if Docker service is running
-    if ! systemctl is-active --quiet docker; then
-      echo -e "${YELLOW}#${RESET} Docker is installed but not running. Attempting to start Docker...\\n"
-      sudo systemctl start docker
-      if ! systemctl is-active --quiet docker; then
-        echo -e "${RED}#${RESET} Failed to start Docker. Please check the Docker service status and try again."
-        exit 1
-      else
-        echo -e "${GREEN}#${RESET} Docker service started successfully.\\n"
-      fi
+    echo -e "${GREEN}#${RESET} Docker is installed.\\n"
+
+    # Check if Docker daemon is running
+    if ! docker info &>/dev/null; then
+      echo -e "${YELLOW}#${RESET} Docker is installed but not running. Attempting to open Docker Desktop...\\n"
+      open -a Docker 2>/dev/null || true
+      echo -e "${RED}#${RESET} Please wait for Docker Desktop to fully start, then re-run this script."
+      exit 1
     else
-      echo -e "${GREEN}#${RESET} Docker service is already running.\\n"
+      echo -e "${GREEN}#${RESET} Docker is running.\\n"
     fi
   fi
 }
 
-setup_nvidia_container_toolkit() {
-  # This function attempts to set up NVIDIA GPU support but is non-blocking
-  # Any failures will result in warnings but will NOT stop the installation process
-  
-  echo -e "${YELLOW}#${RESET} Checking for NVIDIA GPU...\\n"
-  
-  # Safely detect NVIDIA GPU
-  local has_nvidia_gpu=false
-  if command -v lspci &> /dev/null; then
-    if lspci 2>/dev/null | grep -i nvidia &> /dev/null; then
-      has_nvidia_gpu=true
-      echo -e "${GREEN}#${RESET} NVIDIA GPU detected.\\n"
-    fi
-  fi
-  
-  # Also check for nvidia-smi
-  if ! $has_nvidia_gpu && command -v nvidia-smi &> /dev/null; then
-    if nvidia-smi &> /dev/null; then
-      has_nvidia_gpu=true
-      echo -e "${GREEN}#${RESET} NVIDIA GPU detected via nvidia-smi.\\n"
-    fi
-  fi
-  
-  if ! $has_nvidia_gpu; then
-    echo -e "${YELLOW}#${RESET} No NVIDIA GPU detected. Skipping NVIDIA container toolkit installation.\\n"
-    return 0
-  fi
-  
-  # Check if nvidia-container-toolkit is already installed
-  if command -v nvidia-ctk &> /dev/null; then
-    echo -e "${GREEN}#${RESET} NVIDIA container toolkit is already installed.\\n"
-    return 0
-  fi
-  
-  echo -e "${YELLOW}#${RESET} Installing NVIDIA container toolkit...\\n"
-  
-  # Install dependencies per https://docs.ollama.com/docker - wrapped in error handling
-  if ! curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey 2>/dev/null | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg 2>/dev/null; then
-    echo -e "${YELLOW}#${RESET} Warning: Failed to add NVIDIA container toolkit GPG key. Continuing anyway...\\n"
-    return 0
-  fi
-  
-  if ! curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list 2>/dev/null \
-      | sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' \
-      | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list > /dev/null 2>&1; then
-    echo -e "${YELLOW}#${RESET} Warning: Failed to add NVIDIA container toolkit repository. Continuing anyway...\\n"
-    return 0
-  fi
-  
-  if ! sudo apt-get update 2>/dev/null; then
-    echo -e "${YELLOW}#${RESET} Warning: Failed to update package list. Continuing anyway...\\n"
-    return 0
-  fi
-  
-  if ! sudo apt-get install -y nvidia-container-toolkit 2>/dev/null; then
-    echo -e "${YELLOW}#${RESET} Warning: Failed to install NVIDIA container toolkit. Continuing anyway...\\n"
-    return 0
-  fi
-  
-  echo -e "${GREEN}#${RESET} NVIDIA container toolkit installed successfully.\\n"
-  
-  # Configure Docker to use NVIDIA runtime
-  echo -e "${YELLOW}#${RESET} Configuring Docker to use NVIDIA runtime...\\n"
-  
-  if ! sudo nvidia-ctk runtime configure --runtime=docker 2>/dev/null; then
-    echo -e "${YELLOW}#${RESET} nvidia-ctk configure failed, attempting manual configuration...\\n"
-    
-    # Fallback: Manually configure daemon.json
-    local daemon_json="/etc/docker/daemon.json"
-    local config_success=false
-    
-    if [[ -f "$daemon_json" ]]; then
-      # Backup existing config (best effort)
-      sudo cp "$daemon_json" "${daemon_json}.backup" 2>/dev/null || true
-      
-      # Check if nvidia runtime already exists
-      if ! grep -q '"nvidia"' "$daemon_json" 2>/dev/null; then
-        # Add nvidia runtime to existing config using jq if available
-        if command -v jq &> /dev/null; then
-          if sudo jq '. + {"runtimes": {"nvidia": {"path": "nvidia-container-runtime", "runtimeArgs": []}}}' "$daemon_json" > /tmp/daemon.json.tmp 2>/dev/null; then
-            if sudo mv /tmp/daemon.json.tmp "$daemon_json" 2>/dev/null; then
-              config_success=true
-            fi
-          fi
-          # Clean up temp file if move failed
-          sudo rm -f /tmp/daemon.json.tmp 2>/dev/null || true
-        else
-          echo -e "${YELLOW}#${RESET} jq not available, skipping manual daemon.json configuration...\\n"
-        fi
-      else
-        config_success=true  # Already configured
-      fi
-    else
-      # Create new daemon.json with nvidia runtime (best effort)
-      if echo '{"runtimes":{"nvidia":{"path":"nvidia-container-runtime","runtimeArgs":[]}}}' | sudo tee "$daemon_json" > /dev/null 2>&1; then
-        config_success=true
-      fi
-    fi
-    
-    if ! $config_success; then
-      echo -e "${YELLOW}#${RESET} Manual daemon.json configuration unsuccessful. GPU support may require manual setup.\\n"
-    fi
-  fi
-  
-  # Restart Docker service
-  echo -e "${YELLOW}#${RESET} Restarting Docker service...\\n"
-  if ! sudo systemctl restart docker 2>/dev/null; then
-    echo -e "${YELLOW}#${RESET} Warning: Failed to restart Docker service. You may need to restart it manually.\\n"
-    return 0
-  fi
-  
-  # Verify NVIDIA runtime is available
-  echo -e "${YELLOW}#${RESET} Verifying NVIDIA runtime configuration...\\n"
-  sleep 2  # Give Docker a moment to fully restart
-  
-  if docker info 2>/dev/null | grep -q "nvidia"; then
-    echo -e "${GREEN}#${RESET} NVIDIA runtime successfully configured and verified.\\n"
+setup_apple_silicon_gpu() {
+  # This function is informational only — Apple Silicon uses Metal natively via Ollama
+  # No additional toolkit installation is required on macOS
+
+  echo -e "${YELLOW}#${RESET} Checking for Apple Silicon GPU (Metal)...\\n"
+
+  local chip
+  chip=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "Unknown")
+
+  if [[ "$chip" == *"Apple"* ]]; then
+    echo -e "${GREEN}#${RESET} Apple Silicon detected: ${chip}\\n"
+    echo -e "${GREEN}#${RESET} Metal GPU acceleration is available natively via Ollama — no additional setup required.\\n"
+    echo -e "${YELLOW}#${RESET} For best AI performance, allocate at least 8GB to Docker Desktop:\\n"
+    echo -e "${YELLOW}#${RESET}   Docker Desktop → Settings → Resources → Memory\\n"
   else
-    echo -e "${YELLOW}#${RESET} Warning: NVIDIA runtime not detected in Docker info. GPU acceleration may not work.\\n"
-    echo -e "${YELLOW}#${RESET} You may need to manually configure /etc/docker/daemon.json and restart Docker.\\n"
+    echo -e "${YELLOW}#${RESET} Intel Mac detected: ${chip}\\n"
+    echo -e "${YELLOW}#${RESET} GPU acceleration via Metal may be limited on Intel Macs.\\n"
+    echo -e "${YELLOW}#${RESET} The AI assistant will run in CPU-only mode.\\n"
   fi
-  
-  echo -e "${GREEN}#${RESET} NVIDIA container toolkit configuration completed.\\n"
 }
 
 get_install_confirmation(){
@@ -396,12 +257,12 @@ download_management_compose_file() {
 
   # Inject dynamic env values into the compose file
   echo -e "${YELLOW}#${RESET} Configuring docker-compose file env variables...\\n"
-  sed -i "s|URL=replaceme|URL=http://${local_ip_address}:8080|g" "$compose_file_path"
-  sed -i "s|APP_KEY=replaceme|APP_KEY=${app_key}|g" "$compose_file_path"
-  
-  sed -i "s|DB_PASSWORD=replaceme|DB_PASSWORD=${db_user_password}|g" "$compose_file_path"
-  sed -i "s|MYSQL_ROOT_PASSWORD=replaceme|MYSQL_ROOT_PASSWORD=${db_root_password}|g" "$compose_file_path"
-  sed -i "s|MYSQL_PASSWORD=replaceme|MYSQL_PASSWORD=${db_user_password}|g" "$compose_file_path"
+  sed -i '' "s|URL=replaceme|URL=http://${local_ip_address}:8080|g" "$compose_file_path"
+  sed -i '' "s|APP_KEY=replaceme|APP_KEY=${app_key}|g" "$compose_file_path"
+
+  sed -i '' "s|DB_PASSWORD=replaceme|DB_PASSWORD=${db_user_password}|g" "$compose_file_path"
+  sed -i '' "s|MYSQL_ROOT_PASSWORD=replaceme|MYSQL_ROOT_PASSWORD=${db_root_password}|g" "$compose_file_path"
+  sed -i '' "s|MYSQL_PASSWORD=replaceme|MYSQL_PASSWORD=${db_user_password}|g" "$compose_file_path"
   
   echo -e "${GREEN}#${RESET} Docker compose file configured successfully.\\n"
 }
@@ -493,7 +354,7 @@ start_management_containers() {
 }
 
 get_local_ip() {
-  local_ip_address=$(hostname -I | awk '{print $1}')
+  local_ip_address=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname)
   if [[ -z "$local_ip_address" ]]; then
     echo -e "${RED}#${RESET} Unable to determine local IP address. Please check your network configuration."
     exit 1
@@ -502,59 +363,46 @@ get_local_ip() {
 verify_gpu_setup() {
   # This function only displays GPU setup status and is completely non-blocking
   # It never exits or returns error codes - purely informational
-  
+
   echo -e "\\n${YELLOW}#${RESET} GPU Setup Verification\\n"
   echo -e "${YELLOW}===========================================${RESET}\\n"
-  
-  # Check if NVIDIA GPU is present
-  if command -v nvidia-smi &> /dev/null; then
-    echo -e "${GREEN}✓${RESET} NVIDIA GPU detected:"
-    nvidia-smi --query-gpu=name,memory.total --format=csv,noheader 2>/dev/null | while read -r line; do
-      echo -e "  ${WHITE_R}$line${RESET}"
-    done
-    echo ""
-  else
-    echo -e "${YELLOW}○${RESET} No NVIDIA GPU detected (nvidia-smi not available)\\n"
-  fi
-  
-  # Check if NVIDIA Container Toolkit is installed
-  if command -v nvidia-ctk &> /dev/null; then
-    echo -e "${GREEN}✓${RESET} NVIDIA Container Toolkit installed: $(nvidia-ctk --version 2>/dev/null | head -n1)\\n"
-  else
-    echo -e "${YELLOW}○${RESET} NVIDIA Container Toolkit not installed\\n"
-  fi
-  
-  # Check if Docker has NVIDIA runtime
-  if docker info 2>/dev/null | grep -q \"nvidia\"; then
-    echo -e "${GREEN}✓${RESET} Docker NVIDIA runtime configured\\n"
-  else
-    echo -e "${YELLOW}○${RESET} Docker NVIDIA runtime not detected\\n"
-  fi
-  
-  # Check for AMD GPU
-  if command -v lspci &> /dev/null; then
-    if lspci 2>/dev/null | grep -iE "amd|radeon" &> /dev/null; then
-      echo -e "${YELLOW}○${RESET} AMD GPU detected (ROCm support not currently available)\\n"
+
+  local chip
+  chip=$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo "Unknown")
+
+  if [[ "$chip" == *"Apple"* ]]; then
+    echo -e "${GREEN}✓${RESET} Apple Silicon detected: ${chip}\\n"
+    echo -e "${GREEN}✓${RESET} Metal GPU acceleration available via Ollama\\n"
+
+    # Report Docker Desktop memory allocation
+    local docker_memory
+    docker_memory=$(docker info --format '{{.MemTotal}}' 2>/dev/null)
+    if [[ -n "$docker_memory" ]]; then
+      local mem_gb=$(( docker_memory / 1024 / 1024 / 1024 ))
+      if [[ "$mem_gb" -ge 8 ]]; then
+        echo -e "${GREEN}✓${RESET} Docker Desktop memory: ${mem_gb}GB (sufficient)\\n"
+      else
+        echo -e "${YELLOW}○${RESET} Docker Desktop memory: ${mem_gb}GB (recommended: 8GB+)\\n"
+        echo -e "${YELLOW}#${RESET} Tip: Open Docker Desktop → Settings → Resources → Memory to increase allocation.\\n"
+      fi
     fi
+  else
+    echo -e "${YELLOW}○${RESET} Intel Mac detected: ${chip}\\n"
+    echo -e "${YELLOW}○${RESET} GPU acceleration via Metal may be limited — AI will run in CPU-only mode\\n"
   fi
-  
+
   echo -e "${YELLOW}===========================================${RESET}\\n"
-  
-  # Summary
-  if command -v nvidia-smi &> /dev/null && docker info 2>/dev/null | grep -q \"nvidia\"; then
-    echo -e "${GREEN}#${RESET} GPU acceleration is properly configured! The AI Assistant will use your GPU.\\n"
+
+  if [[ "$chip" == *"Apple"* ]]; then
+    echo -e "${GREEN}#${RESET} GPU acceleration is available! The AI Assistant will use Apple Silicon Metal.\\n"
   else
-    echo -e "${YELLOW}#${RESET} GPU acceleration not detected. The AI Assistant will run in CPU-only mode.\\n"
-    if command -v nvidia-smi &> /dev/null && ! docker info 2>/dev/null | grep -q \"nvidia\"; then
-      echo -e "${YELLOW}#${RESET} Tip: Your GPU is detected but Docker runtime is not configured.\\n"
-      echo -e "${YELLOW}#${RESET} Try restarting Docker: ${WHITE_R}sudo systemctl restart docker${RESET}\\n"
-    fi
+    echo -e "${YELLOW}#${RESET} GPU acceleration not available on Intel Mac. The AI Assistant will run in CPU-only mode.\\n"
   fi
 }
 
 success_message() {
   echo -e "${GREEN}#${RESET} Project N.O.M.A.D installation completed successfully!\\n"
-  echo -e "${GREEN}#${RESET} Installation files are located at /opt/project-nomad\\n\n"
+  echo -e "${GREEN}#${RESET} Installation files are located at /usr/local/project-nomad\\n\n"
   echo -e "${GREEN}#${RESET} Project N.O.M.A.D's Command Center should automatically start whenever your device reboots. However, if you need to start it manually, you can always do so by running: ${WHITE_R}${NOMAD_DIR}/start_nomad.sh${RESET}\\n"
   echo -e "${GREEN}#${RESET} You can now access the management interface at http://localhost:8080 or http://${local_ip_address}:8080\\n"
   echo -e "${GREEN}#${RESET} Thank you for supporting Project N.O.M.A.D!\\n"
@@ -567,7 +415,7 @@ success_message() {
 ###################################################################################################################################################################################################
 
 # Pre-flight checks
-check_is_debian_based
+check_is_macos
 check_is_bash
 check_has_sudo
 ensure_dependencies_installed
@@ -577,7 +425,7 @@ check_is_debug_mode
 get_install_confirmation
 accept_terms
 ensure_docker_installed
-setup_nvidia_container_toolkit
+setup_apple_silicon_gpu
 get_local_ip
 create_nomad_directory
 download_wait_for_it_script
