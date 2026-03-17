@@ -697,35 +697,34 @@ export class DockerService {
         logger.warn(`[DockerService] Could not query Docker info for GPU runtimes: ${error.message}`)
       }
 
-      // Fallback: lspci for host-based installs (not available inside Docker)
+      // Fallback: macOS-native GPU detection via sysctl and system_profiler
       const execAsync = promisify(exec)
 
-      // Check for NVIDIA GPU via lspci
+      // Check for Apple Silicon (Metal GPU) — Ollama uses Metal natively on macOS,
+      // no Docker GPU runtime passthrough is needed or available on macOS Docker Desktop.
       try {
-        const { stdout: nvidiaCheck } = await execAsync(
-          'lspci 2>/dev/null | grep -i nvidia || true'
+        const { stdout: cpuBrand } = await execAsync(
+          'sysctl -n machdep.cpu.brand_string 2>/dev/null || true'
         )
-        if (nvidiaCheck.trim()) {
-          // GPU hardware found but no nvidia runtime — toolkit not installed
-          logger.warn('[DockerService] NVIDIA GPU detected via lspci but NVIDIA Container Toolkit is not installed')
-          return { type: 'none', toolkitMissing: true }
+        if (cpuBrand.trim().includes('Apple')) {
+          logger.info('[DockerService] Apple Silicon detected — Metal GPU available via native Ollama')
+          return { type: 'none' }
         }
       } catch (error) {
-        // lspci not available (likely inside Docker container), continue
+        // sysctl not available, continue
       }
 
-      // Check for AMD GPU via lspci — restrict to display controller classes to avoid
-      // false positives from AMD CPU host bridges, PCI bridges, and chipset devices.
+      // Check for discrete GPU on Intel Mac via system_profiler
       try {
-        const { stdout: amdCheck } = await execAsync(
-          'lspci 2>/dev/null | grep -iE "VGA|3D controller|Display" | grep -iE "amd|radeon" || true'
+        const { stdout: gpuInfo } = await execAsync(
+          'system_profiler SPDisplaysDataType 2>/dev/null | grep "Chipset Model" || true'
         )
-        if (amdCheck.trim()) {
-          logger.info('[DockerService] AMD GPU detected via lspci')
+        if (gpuInfo.toLowerCase().includes('amd') || gpuInfo.toLowerCase().includes('radeon')) {
+          logger.info('[DockerService] AMD GPU detected via system_profiler')
           return { type: 'amd' }
         }
       } catch (error) {
-        // lspci not available, continue
+        // system_profiler not available, continue
       }
 
       logger.info('[DockerService] No GPU detected')
