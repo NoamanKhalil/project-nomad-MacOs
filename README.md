@@ -142,7 +142,7 @@ Project N.O.M.A.D. is built for the community — by people who believe that kno
 - **Website:** [www.projectnomad.us](https://www.projectnomad.us) - Learn more about the project
 - **Discord:** [Join the Community](https://discord.com/invite/crosstalksolutions) - Get help, share your builds, and connect with other NOMAD users
 - **Benchmark Leaderboard:** [benchmark.projectnomad.us](https://benchmark.projectnomad.us) - See how your hardware stacks up against other NOMAD builds
-- **X / Twitter:** Follow [@KhalilNoaman](https://x.com/KhalilNoaman) for updates, behind-the-scenes development, and community highlights
+- **X / Twitter:** Follow [@KhalilNoaman](https://x.com/KhalilNoaman) the guy who ported this for Mac. 
 
 ## License
 
