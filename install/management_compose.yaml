@@ -10,10 +10,9 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - /usr/local/project-nomad/storage:/app/storage
+      - ${HOME}/project-nomad/storage:/app/storage
       - /var/run/docker.sock:/var/run/docker.sock # Allows the admin service to communicate with the Host's Docker daemon
-      - ./entrypoint.sh:/usr/local/bin/entrypoint.sh
-      - ./wait-for-it.sh:/usr/local/bin/wait-for-it.sh
+      - ./scripts:/nomad-scripts # macOS: mount directory (not individual files) to avoid Docker Desktop bind-mount bug
       - nomad-update-shared:/app/update-shared # Shared volume for update communication
     environment:
       - NODE_ENV=production
@@ -36,7 +35,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    entrypoint: ["/usr/local/bin/entrypoint.sh"]
+    entrypoint: ["/nomad-scripts/entrypoint.sh"]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/api/health"]
       interval: 30s
@@ -65,7 +64,7 @@ services:
       - MYSQL_USER=nomad_user
       - MYSQL_PASSWORD=replaceme
     volumes:
-      - /usr/local/project-nomad/mysql:/var/lib/mysql
+      - ${HOME}/project-nomad/mysql:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 30s
@@ -78,7 +77,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - /usr/local/project-nomad/redis:/data
+      - ${HOME}/project-nomad/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -92,7 +91,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock # Allows communication with the Host's Docker daemon
-      - /usr/local/project-nomad:/usr/local/project-nomad # Writable access required so the updater can set the correct image tag in compose.yml
+      - ${HOME}/project-nomad:${HOME}/project-nomad # Writable access required so the updater can set the correct image tag in compose.yml
       - nomad-update-shared:/shared # Shared volume for communication with admin container
   disk-collector:
     image: ghcr.io/crosstalk-solutions/project-nomad-disk-collector:latest
@@ -101,7 +100,7 @@ services:
     restart: unless-stopped
     volumes:
       - /:/host:ro  # Read-only view of Docker VM filesystem (macOS: reflects Docker VM, not macOS host; rslave not supported on macOS)
-      - /usr/local/project-nomad/storage:/storage
+      - ${HOME}/project-nomad/storage:/storage
 
 volumes:
   nomad-update-shared:

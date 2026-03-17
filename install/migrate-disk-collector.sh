@@ -16,7 +16,7 @@
 #
 #   The new approach uses a disk-collector sidecar container that reads host
 #   disk info via a /:/host:ro bind-mount and writes directly to
-#   /usr/local/project-nomad/storage/nomad-disk-info.json, which the admin container
+#   ${HOME}/project-nomad/storage/nomad-disk-info.json, which the admin container
 #   already reads via its existing storage bind-mount. Thus, no admin image update
 #   or new volume mounts required.
 #
@@ -37,7 +37,7 @@ WHITE_R='\033[39m'
 # Constants
 ###############################################################################
 
-NOMAD_DIR="/usr/local/project-nomad"
+NOMAD_DIR="${HOME}/project-nomad"
 COMPOSE_FILE="${NOMAD_DIR}/compose.yml"
 COMPOSE_PROJECT_NAME="project-nomad"
 
@@ -169,7 +169,7 @@ add_disk_collector_service() {
     print "    restart: unless-stopped"
     print "    volumes:"
     print "      - /:/host:ro  # Read-only view of host filesystem (macOS: mounts Docker VM filesystem, not macOS host)"
-    print "      - /usr/local/project-nomad/storage:/storage  # Shared storage dir — disk info written here is read by the admin container"
+    print "      - ${HOME}/project-nomad/storage:/storage  # Shared storage dir — disk info written here is read by the admin container"
     print ""
   }
   {print}' "$COMPOSE_FILE" > "${COMPOSE_FILE}.tmp" && mv "${COMPOSE_FILE}.tmp" "$COMPOSE_FILE"

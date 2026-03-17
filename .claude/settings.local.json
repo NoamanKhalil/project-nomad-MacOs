@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash -n install/install_nomad.sh)",
+      "Bash(bash -n install/update_nomad.sh)",
+      "Bash(bash -n install/uninstall_nomad.sh)",
+      "Bash(bash -n install/migrate-disk-collector.sh)",
+      "Bash(bash -n install/run_updater_fixes.sh)",
+      "Bash(brew install:*)",
+      "Bash(shellcheck install/install_nomad.sh install/update_nomad.sh install/uninstall_nomad.sh install/migrate-disk-collector.sh install/run_updater_fixes.sh)",
+      "Bash(bash -n install/management_compose.yaml)",
+      "Bash(bash -n install/sidecar-disk-collector/collect-disk-info.sh)",
+      "Bash(bash -n install/collect_disk_info.sh)",
+      "Bash(shellcheck install/sidecar-disk-collector/collect-disk-info.sh install/collect_disk_info.sh)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(grep -r 'sed -i ' install/*.sh)",
+      "Bash(open -a Docker)",
+      "Bash(cp /Users/noamankhalil/Project-Nomad-MacOs/project-nomad-MacOs/install/management_compose.yaml /usr/local/project-nomad/compose.yml)",
+      "Bash(cp /Users/noamankhalil/Project-Nomad-MacOs/project-nomad-MacOs/install/sidecar-updater/Dockerfile /usr/local/project-nomad/sidecar-updater/Dockerfile)",
+      "Bash(cp /Users/noamankhalil/Project-Nomad-MacOs/project-nomad-MacOs/install/sidecar-updater/update-watcher.sh /usr/local/project-nomad/sidecar-updater/update-watcher.sh)",
+      "Bash(chmod +x /usr/local/project-nomad/sidecar-updater/update-watcher.sh)",
+      "Bash(curl -fsSL https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/entrypoint.sh -o /usr/local/project-nomad/entrypoint.sh)",
+      "Bash(curl -fsSL https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh -o /usr/local/project-nomad/wait-for-it.sh)",
+      "Bash(chmod +x /usr/local/project-nomad/entrypoint.sh /usr/local/project-nomad/wait-for-it.sh)",
+      "Bash(docker compose:*)",
+      "Bash(docker ps:*)"
+    ]
+  }
+}

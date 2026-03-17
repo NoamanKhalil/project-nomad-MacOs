@@ -230,21 +230,21 @@ The system is designed to recover gracefully. If an update fails:
 
 ### Command-Line Maintenance
 
-For advanced troubleshooting or when you can't access the web interface, N.O.M.A.D. includes helper scripts in `/usr/local/project-nomad`:
+For advanced troubleshooting or when you can't access the web interface, N.O.M.A.D. includes helper scripts in `~/project-nomad`:
 
 **Start all services:**
 ```bash
-sudo bash /usr/local/project-nomad/start_nomad.sh
+sudo bash ~/project-nomad/start_nomad.sh
 ```
 
 **Stop all services:**
 ```bash
-sudo bash /usr/local/project-nomad/stop_nomad.sh
+sudo bash ~/project-nomad/stop_nomad.sh
 ```
 
 **Update Command Center:**
 ```bash
-sudo bash /usr/local/project-nomad/update_nomad.sh
+sudo bash ~/project-nomad/update_nomad.sh
 ```
 *Note: This updates the Command Center only, not individual apps. Update apps through the web interface.*
 

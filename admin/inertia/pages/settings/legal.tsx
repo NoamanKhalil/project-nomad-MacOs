@@ -130,8 +130,8 @@ export default function LegalPage() {
               All data associated with Project N.O.M.A.D. is stored locally on your device:
             </p>
             <ul className="list-disc list-inside space-y-2 text-gray-700">
-              <li><strong>Installation Directory:</strong> /usr/local/project-nomad</li>
-              <li><strong>Downloaded Content:</strong> /usr/local/project-nomad/storage</li>
+              <li><strong>Installation Directory:</strong> ~/project-nomad</li>
+              <li><strong>Downloaded Content:</strong> ~/project-nomad/storage</li>
               <li><strong>Application Data:</strong> Stored in Docker volumes on your local system</li>
             </ul>
             <p className="text-gray-700 mt-3">
