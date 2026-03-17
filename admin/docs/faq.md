@@ -244,7 +244,7 @@ sudo bash /usr/local/project-nomad/stop_nomad.sh
 
 **Update Command Center:**
 ```bash
-sudo bash /opt/project-nomad/update_nomad.sh
+sudo bash /usr/local/project-nomad/update_nomad.sh
 ```
 *Note: This updates the Command Center only, not individual apps. Update apps through the web interface.*
 
