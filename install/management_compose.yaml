@@ -58,8 +58,7 @@ services:
     image: mysql:8.0
     container_name: nomad_mysql
     restart: unless-stopped
-    ports:
-      - "3306:3306"
+    # Port not exposed to host — only accessible within the Docker network (avoids conflicts with local MySQL)
     environment:
       - MYSQL_ROOT_PASSWORD=replaceme
       - MYSQL_DATABASE=nomad
@@ -76,8 +75,7 @@ services:
     image: redis:7-alpine
     container_name: nomad_redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    # Port not exposed to host — only accessible within the Docker network (avoids conflicts with local Redis)
     volumes:
       - ${HOME}/project-nomad/redis:/data
     healthcheck:

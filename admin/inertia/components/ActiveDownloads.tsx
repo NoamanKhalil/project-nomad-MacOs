@@ -17,7 +17,7 @@ const ActiveDownloads = ({ filetype, withHeader = false }: ActiveDownloadProps) 
       <div className="space-y-4">
         {downloads && downloads.length > 0 ? (
           downloads.map((download) => (
-            <div className="bg-desert-white rounded-lg p-4 border border-desert-stone-light shadow-sm hover:shadow-lg transition-shadow">
+            <div key={download.jobId} className="bg-desert-white rounded-lg p-4 border border-desert-stone-light shadow-sm hover:shadow-lg transition-shadow">
               <HorizontalBarChart
                 items={[
                   {

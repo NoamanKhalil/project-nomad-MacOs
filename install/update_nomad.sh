@@ -113,10 +113,20 @@ force_recreate() {
 }
 
 get_local_ip() {
-  local_ip_address=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname)
+  local active_iface
+  active_iface=$(route get default 2>/dev/null | awk '/interface:/{print $2}')
+  if [[ -n "$active_iface" ]]; then
+    local_ip_address=$(ipconfig getifaddr "$active_iface" 2>/dev/null)
+  fi
   if [[ -z "$local_ip_address" ]]; then
-    echo -e "${RED}#${RESET} Unable to determine local IP address. Please check your network configuration."
-    # Don't exit if we can't determine the local IP address, it's not critical for the installation
+    for iface in en0 en1 en2 en3; do
+      local_ip_address=$(ipconfig getifaddr "$iface" 2>/dev/null)
+      [[ -n "$local_ip_address" ]] && break
+    done
+  fi
+  if [[ -z "$local_ip_address" ]]; then
+    local_ip_address="127.0.0.1"
+    echo -e "${YELLOW}#${RESET} Could not determine LAN IP — defaulting to 127.0.0.1 (localhost only).\\n"
   fi
 }
 

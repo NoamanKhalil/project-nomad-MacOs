@@ -12,6 +12,7 @@ export default function useServiceInstallationActivity() {
       setInstallActivity((prev) => [
         ...prev,
         {
+          id: crypto.randomUUID(),
           service_name: data.service_name ?? 'unknown',
           type: data.status ?? 'unknown',
           timestamp: new Date().toISOString(),

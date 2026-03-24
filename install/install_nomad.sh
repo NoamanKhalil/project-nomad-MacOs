@@ -29,7 +29,17 @@ GREEN='\033[1;32m' # Light Green.
 ###################################################################################################################################################################################################
 
 WHIPTAIL_TITLE="Project N.O.M.A.D Installation"
-NOMAD_DIR="${HOME}/project-nomad"
+
+# Resolve the real user's home directory even when run via `sudo bash`
+if [[ -n "$SUDO_USER" ]]; then
+  REAL_HOME=$(eval echo ~"$SUDO_USER")
+  REAL_USER="$SUDO_USER"
+else
+  REAL_HOME="$HOME"
+  REAL_USER="$(whoami)"
+fi
+
+NOMAD_DIR="${REAL_HOME}/project-nomad"
 MANAGEMENT_COMPOSE_FILE_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/management_compose.yaml"
 ENTRYPOINT_SCRIPT_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/entrypoint.sh"
 SIDECAR_UPDATER_DOCKERFILE_URL="https://raw.githubusercontent.com/Crosstalk-Solutions/project-nomad/refs/heads/main/install/sidecar-updater/Dockerfile"
@@ -63,11 +73,9 @@ check_has_sudo() {
   if sudo -n true 2>/dev/null; then
     echo -e "${GREEN}#${RESET} User has sudo permissions.\\n"
   else
-    echo "User does not have sudo permissions"
-    header_red
-    echo -e "${RED}#${RESET} This script requires sudo permissions to run. Please run the script with sudo.\\n"
-    echo -e "${RED}#${RESET} For example: sudo bash $(basename "$0")"
-    exit 1
+    # sudo is not required — all install paths target $HOME which the current user owns.
+    # If system-level operations are ever needed, the user will be prompted at that point.
+    echo -e "${YELLOW}#${RESET} sudo not available in passwordless mode — continuing without it (not required for $HOME installs).\\n"
   fi
 }
 
@@ -226,19 +234,20 @@ create_nomad_directory(){
   # Ensure the main installation directory exists
   if [[ ! -d "$NOMAD_DIR" ]]; then
     echo -e "${YELLOW}#${RESET} Creating directory for Project N.O.M.A.D at $NOMAD_DIR...\\n"
-    sudo mkdir -p "$NOMAD_DIR"
-    sudo chown "$(whoami):$(whoami)" "$NOMAD_DIR"
-
+    mkdir -p "$NOMAD_DIR"
     echo -e "${GREEN}#${RESET} Directory created successfully.\\n"
   else
     echo -e "${GREEN}#${RESET} Directory $NOMAD_DIR already exists.\\n"
   fi
 
   # Also ensure the directory has a /storage/logs/ subdirectory
-  sudo mkdir -p "${NOMAD_DIR}/storage/logs"
+  mkdir -p "${NOMAD_DIR}/storage/logs"
 
-  # Create a admin.log file in the logs directory
-  sudo touch "${NOMAD_DIR}/storage/logs/admin.log"
+  # Create an admin.log file in the logs directory
+  touch "${NOMAD_DIR}/storage/logs/admin.log"
+
+  # Create the scripts/ directory used by the compose volume mount (./scripts:/nomad-scripts)
+  mkdir -p "${NOMAD_DIR}/scripts"
 }
 
 download_management_compose_file() {
@@ -250,6 +259,17 @@ download_management_compose_file() {
     exit 1
   fi
   echo -e "${GREEN}#${RESET} Docker compose file downloaded successfully to $compose_file_path.\\n"
+
+  # The upstream compose file may use /opt/project-nomad (a root-owned path not in Docker Desktop's
+  # default file sharing list). Rewrite all occurrences to NOMAD_DIR ($HOME/project-nomad) so
+  # volumes resolve correctly on macOS without needing sudo or manual Docker file-sharing setup.
+  sed -i '' "s|/opt/project-nomad|${NOMAD_DIR}|g" "$compose_file_path"
+  echo -e "${GREEN}#${RESET} Volume paths normalised to ${NOMAD_DIR}.\\n"
+
+  # macOS Docker Desktop does not support 'rslave' or 'shared' mount propagation on the root bind mount.
+  # Strip ,rslave from the disk-collector volume so it uses plain :ro, which works on macOS.
+  sed -i '' "s|:ro,rslave|:ro|g" "$compose_file_path"
+  echo -e "${GREEN}#${RESET} Removed unsupported rslave mount propagation (not supported on macOS Docker Desktop).\\n"
 
   local app_key=$(generateRandomPass)
   local db_root_password=$(generateRandomPass)
@@ -290,7 +310,9 @@ download_wait_for_it_script() {
 }
 
 download_entrypoint_script() {
-  local entrypoint_script_path="${NOMAD_DIR}/entrypoint.sh"
+  # Must be saved inside scripts/ — compose mounts ./scripts:/nomad-scripts
+  # and the container entrypoint is set to /nomad-scripts/entrypoint.sh
+  local entrypoint_script_path="${NOMAD_DIR}/scripts/entrypoint.sh"
 
   echo -e "${YELLOW}#${RESET} Downloading entrypoint script...\\n"
   if ! curl -fsSL "$ENTRYPOINT_SCRIPT_URL" -o "$entrypoint_script_path"; then
@@ -303,10 +325,7 @@ download_entrypoint_script() {
 
 download_sidecar_files() {
   # Create sidecar-updater directory if it doesn't exist
-  if [[ ! -d "${NOMAD_DIR}/sidecar-updater" ]]; then
-    sudo mkdir -p "${NOMAD_DIR}/sidecar-updater"
-    sudo chown "$(whoami):$(whoami)" "${NOMAD_DIR}/sidecar-updater"
-  fi
+  mkdir -p "${NOMAD_DIR}/sidecar-updater"
 
   local sidecar_dockerfile_path="${NOMAD_DIR}/sidecar-updater/Dockerfile"
   local sidecar_script_path="${NOMAD_DIR}/sidecar-updater/update-watcher.sh"
@@ -356,7 +375,9 @@ download_helper_scripts() {
 
 start_management_containers() {
   echo -e "${YELLOW}#${RESET} Starting management containers using docker compose...\\n"
-  if ! sudo docker compose -p project-nomad -f "${NOMAD_DIR}/compose.yml" up -d; then
+  # Pass HOME explicitly so compose volume paths using ${HOME} resolve to the real user's home,
+  # not /var/root (which sudo would set by default)
+  if ! HOME="$REAL_HOME" docker compose -p project-nomad -f "${NOMAD_DIR}/compose.yml" up -d; then
     echo -e "${RED}#${RESET} Failed to start management containers. Please check the logs and try again."
     exit 1
   fi
@@ -364,10 +385,23 @@ start_management_containers() {
 }
 
 get_local_ip() {
-  local_ip_address=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || hostname)
+  # Use the interface that handles the default route (works for Wi-Fi, USB Ethernet, VPN, etc.)
+  local active_iface
+  active_iface=$(route get default 2>/dev/null | awk '/interface:/{print $2}')
+  if [[ -n "$active_iface" ]]; then
+    local_ip_address=$(ipconfig getifaddr "$active_iface" 2>/dev/null)
+  fi
+  # Fallback: try common interface names in order
   if [[ -z "$local_ip_address" ]]; then
-    echo -e "${RED}#${RESET} Unable to determine local IP address. Please check your network configuration."
-    exit 1
+    for iface in en0 en1 en2 en3; do
+      local_ip_address=$(ipconfig getifaddr "$iface" 2>/dev/null)
+      [[ -n "$local_ip_address" ]] && break
+    done
+  fi
+  # Final fallback: use loopback so the URL is at least functional locally
+  if [[ -z "$local_ip_address" ]]; then
+    local_ip_address="127.0.0.1"
+    echo -e "${YELLOW}#${RESET} Could not determine LAN IP — defaulting to 127.0.0.1 (localhost only).\\n"
   fi
 }
 verify_gpu_setup() {

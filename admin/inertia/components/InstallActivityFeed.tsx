@@ -3,6 +3,7 @@ import classNames from '~/lib/classNames'
 
 export type InstallActivityFeedProps = {
   activity: Array<{
+    id: string
     service_name: string
     type:
       | 'initializing'
@@ -35,7 +36,7 @@ const InstallActivityFeed: React.FC<InstallActivityFeedProps> = ({ activity, cla
       {withHeader && <h2 className="text-lg font-semibold text-gray-900">Installation Activity</h2>}
       <ul role="list" className={classNames("space-y-6 text-desert-green", withHeader ? 'mt-6' : '')}>
         {activity.map((activityItem, activityItemIdx) => (
-          <li key={`${activityItemIdx}-${activityItem.timestamp}`} className="relative flex gap-x-4">
+          <li key={activityItem.id} className="relative flex gap-x-4">
             <div
               className={classNames(
                 activityItemIdx === activity.length - 1 ? 'h-6' : '-bottom-6',
